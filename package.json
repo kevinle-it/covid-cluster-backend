@@ -1,0 +1,22 @@
+{
+  "name": "covid-cluster-backend",
+  "version": "1.0.0",
+  "description": "backend for covid-cluster",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lmtri1995/covid-cluster-backend.git"
+  },
+  "author": "leminhtri",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lmtri1995/covid-cluster-backend/issues"
+  },
+  "homepage": "https://github.com/lmtri1995/covid-cluster-backend#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
