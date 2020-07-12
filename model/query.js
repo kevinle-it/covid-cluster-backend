@@ -2,19 +2,21 @@ const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
-let employee = new Schema(
+let querySchema = new Schema(
   {
-    name: {
-      type: String
+    name: String,
+    props: {
+      [0]: String,
+      [1]: String,
+      [2]: String,
+      [3]: String,
+      [4]: String,
+      [5]: String,
+      coordinates: String,
     },
-    age: {
-      type: Number
-    },
-    location: {
-      type: String
-    }
   },
-  { collection: "Employees" }
+  { collection: "Query" }
 );
 
-module.exports = mongoose.model("employees", employee);
+const queryModel = mongoose.model("query", querySchema);
+module.exports = queryModel;
