@@ -1,8 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const app = express();
-const mongoose = require('mongoose');
-const coordinatesModel = require('./model/coordinates.js');
+const express = require('express')
+const cors = require('cors')
+const app = express()
+const bodyParser = require("body-parser")
+const mongoose = require('mongoose')
+const coordinatesModel = require('./model/coordinates.js')
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 mongoose.connect('mongodb+srv://covid-cluster:thientai@cluster0.crjje.mongodb.net/test?retryWrites=true&w=majority', {
   useNewUrlParser: true,
@@ -44,27 +48,31 @@ app.get('/api/v1/hexa', async(req, res) => {
 
 
 // search hexa
-app.get('/api/v1/hexa/:hexaname', (req, res) => {
-  const hexaname = req.params.hexaname;
+app.get('/api/v1/hexa/:hexaname', async (req, res) => {
+	const hexaname = req.params.hexaname
 
-  console.log('hexaname', hexaname);
-});
+	console.log('search hexaname', hexaname)	
+})
 
 
 // remove hexa
-app.delete('/api/v1/hexa/:hexaname', (req, res) => {
-  const hexaname = req.params.hexaname;
+app.delete('/api/v1/hexa/:hexaname', async (req, res) => {
+	const hexaname = req.params.hexaname
 
-  console.log('hexaname', hexaname);
-});
+	console.log('remove hexaname', hexaname)
+})
 
 
 // add hexa
-app.post('/api/v1/hexa/:hexaname', (req, res) => {
-  const hexaname = req.params.hexaname;
+app.post('/api/v1/hexa', async (req, res) => {
 
-  console.log('hexaname', hexaname);
-});
+	console.log('add hexaname', req.body)
+	try {
+		res.status(200).send('Cool')
+	} catch (err) {
+		res.status(500).send(err);
+	}
+})
 
 
 app.listen(8000, function() {
