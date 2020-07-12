@@ -92,12 +92,15 @@ app.post('/api/v1/hexa', async (req, res) => {
     const { name, neighbor, border } = req.body;
 
     const newHex = await addHex({ name, toHexName: neighbor, atBorderNo: border, queryModel, coordinatesModel });
-    res.status(200).send({
-      data: {
-        coordinates: newHex.coordinates,
-        name: newHex.name,
-      }
-    });
+    if (newHex) {
+      res.status(200).send({
+        data: {
+          coordinates: newHex.coordinates,
+          name: newHex.name,
+        }
+      });
+    }
+    res.status(405).send({ message: 'Cannot add this hexagon!' });
 	} catch (err) {
 		res.status(500).send(err);
 	}

@@ -9,14 +9,17 @@ async function addHex({ name, toHexName, atBorderNo, queryModel, coordinatesMode
       name: newCoordinates.name,
     };
   }
-  const { _doc: oldHex } = await queryModel.findOne({ name: toHexName }).exec();
-  const [q, r] = oldHex.props.coordinates.split(',').map(c => Number(c)); // Get old hex coordinates
+  const oldHex = await queryModel.findOne({ name: toHexName }).exec();
+  if (oldHex) {
+    const [q, r] = oldHex._doc.props.coordinates.split(',').map(c => Number(c)); // Get old hex coordinates
 
-  const newCoordinates = getNewCoordinatesFrom(q, r, atBorderNo);
-  const newHex = {
-    coordinates: `${newCoordinates[0]},${newCoordinates[1]}`,
-  };
-  return await updateAllHexesBordersAround(newHex, name, true, queryModel, coordinatesModel);
+    const newCoordinates = getNewCoordinatesFrom(q, r, atBorderNo);
+    const newHex = {
+      coordinates: `${newCoordinates[0]},${newCoordinates[1]}`,
+    };
+    return await updateAllHexesBordersAround(newHex, name, true, queryModel, coordinatesModel);
+  }
+  return null;
 }
 
 // Get border of hex2 that connects to hex1's border (oldBorderNo)
