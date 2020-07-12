@@ -9,6 +9,10 @@ async function addHex({ name, toHexName, atBorderNo, queryModel, coordinatesMode
       name: newCoordinates.name,
     };
   }
+  const existHex = await queryModel.findOne({ name }).exec();
+  if (existHex) {
+    return null;
+  }
   const oldHex = await queryModel.findOne({ name: toHexName }).exec();
   if (oldHex) {
     const [q, r] = oldHex._doc.props.coordinates.split(',').map(c => Number(c)); // Get old hex coordinates
