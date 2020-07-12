@@ -2,7 +2,7 @@
   "name": "covid-cluster-backend",
   "version": "1.0.0",
   "description": "backend for covid-cluster",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "jest --watch"
   },
