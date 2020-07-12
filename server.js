@@ -3,7 +3,13 @@ const cors = require('cors')
 const app = express()
 const bodyParser = require("body-parser")
 const mongoose = require('mongoose')
-const coordinatesModel = require('./model/coordinates.js')
+const queryModel = require('./model/query')
+const coordinatesModel = require('./model/coordinates')
+const {
+  addHex,
+  searchHex,
+  removeHex,
+} = require('./hexaUtils');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -24,42 +30,56 @@ app.use(cors({ origin: true, credentials: true }));
 
 // get all
 app.get('/api/v1/hexa', async(req, res) => {
-  const hexaGridData = {
-    '0,0': 'ax',
-    '0,-1': 'bx',
-    '0,1': 'cx',
-    '1,-1': 'dx',
-    '1,0': 'ex',
-    '-1,1': 'fx',
-    '-1,0': 'gx',
-    '-2,0': 'hx',
-  };
-
-  const gridData = await coordinatesModel.find({});
-
   try {
+    const gridData = await coordinatesModel.find({});
     console.log(gridData);
+
+    res.send({ data: gridData });
   } catch (err) {
     res.status(500).send(err);
   }
-
-  res.send({ data: hexaGridData });
 });
 
 
 // search hexa
 app.get('/api/v1/hexa/:hexaname', async (req, res) => {
-	const hexaname = req.params.hexaname
+	const { hexaname } = req.params;
 
-	console.log('search hexaname', hexaname)	
+	console.log('search hexaname', hexaname);
+
+	try {
+    const hexResult = await searchHex(hexaname, queryModel);
+
+    if (hexResult) {
+      res.status(200).send({
+        data: { ...hexResult },
+      });
+    }
+    res.status(404).send({ message: 'Hexagon not found!' });
+  } catch (err) {
+    res.status(500).send(err);
+  }
 })
 
 
 // remove hexa
 app.delete('/api/v1/hexa/:hexaname', async (req, res) => {
-	const hexaname = req.params.hexaname
+	const { hexaname } = req.params;
 
-	console.log('remove hexaname', hexaname)
+	console.log('remove hexaname', hexaname);
+
+	try {
+    const hexResult = await removeHex(hexaname, queryModel, coordinatesModel);
+
+    if (hexResult) {
+      res.status(200).send({
+        data: { ...hexResult },
+      });
+    }
+    res.status(405).send({ message: 'Cannot remove this hexagon!' });
+  } catch (err) {
+    res.status(500).send(err);
+  }
 })
 
 
@@ -67,8 +87,17 @@ app.delete('/api/v1/hexa/:hexaname', async (req, res) => {
 app.post('/api/v1/hexa', async (req, res) => {
 
 	console.log('add hexaname', req.body)
+
 	try {
-		res.status(200).send('Cool')
+    const { name, neighbor, border } = req.body;
+
+    const newHex = await addHex({ name, toHexName: neighbor, atBorderNo: border, queryModel, coordinatesModel });
+    res.status(200).send({
+      data: {
+        coordinates: newHex.coordinates,
+        name: newHex.name,
+      }
+    });
 	} catch (err) {
 		res.status(500).send(err);
 	}

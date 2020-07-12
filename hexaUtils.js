@@ -1,28 +1,22 @@
-function addHex({ name, toHexName, atBorderNo, queryMap, coordinatesMap }) {
-  if (!queryMap || !coordinatesMap) {
-    queryMap = new Map();
-    coordinatesMap = new Map();
-
-    queryMap.set(name, { coordinates: '0,0' });
-    coordinatesMap.set('0,0', name);
+async function addHex({ name, toHexName, atBorderNo, queryModel, coordinatesModel }) {
+  const collectionSize = await coordinatesModel.estimatedDocumentCount().exec();
+  if (collectionSize === 0) {
+    const newHex = { name: name, props: { coordinates: '0,0' } };
+    await new queryModel({ name: newHex.name, props: newHex.props }).save();
+    const { _doc: newCoordinates } = await new coordinatesModel({ coordinates: newHex.props.coordinates, name: newHex.name }).save();
     return {
-      queryMap,
-      coordinatesMap,
+      coordinates: newCoordinates.coordinates,
+      name: newCoordinates.name,
     };
   }
-  const oldHex = queryMap.get(toHexName);
-  const [q, r] = oldHex.coordinates.split(',').map(c => Number(c)); // Get old hex coordinates
+  const { _doc: oldHex } = await queryModel.findOne({ name: toHexName }).exec();
+  const [q, r] = oldHex.props.coordinates.split(',').map(c => Number(c)); // Get old hex coordinates
 
   const newCoordinates = getNewCoordinatesFrom(q, r, atBorderNo);
   const newHex = {
     coordinates: `${newCoordinates[0]},${newCoordinates[1]}`,
   };
-  updateAllHexesBordersAround(newHex, name, true, queryMap, coordinatesMap);
-
-  return {
-    queryMap,
-    coordinatesMap,
-  };
+  return await updateAllHexesBordersAround(newHex, name, true, queryModel, coordinatesModel);
 }
 
 // Get border of hex2 that connects to hex1's border (oldBorderNo)
@@ -51,28 +45,31 @@ function getNewCoordinatesFrom(q, r, borderNo) {
   }
 }
 
-function searchHex(name, queryMap) {
-  return queryMap.get(name);
+async function searchHex(name, queryModel) {
+  const { _doc: hexFound } = await queryModel.findOne({ name }).exec();
+  return hexFound ? {
+    name: hexFound.name,
+    props: hexFound.props,
+  } : null;
 }
 
-function removeHex(name, queryMap, coordinatesMap) {
-  const hex = queryMap.get(name);
+async function removeHex(name, queryModel, coordinatesModel) {
+  // const hex = queryModel.get(name);
+  const { _doc: { props: hex } } = await queryModel.findOne({ name }).exec();
   // Check if there are opposite hexes connected to ${hex} at ${hex}'s borders that are not consecutive
   const oppositeHexNames = isAbleToDisconnectGrids(hex);
 
   if (!oppositeHexNames) {  // Unable to disconnect grids -> Safe to remove
-    updateAllHexesBordersAround(hex, name, false, queryMap, coordinatesMap);
-    return true;
+    return await updateAllHexesBordersAround(hex, name, false, queryModel, coordinatesModel);
   }
 
   // Find if there is a path from ${hexName1} to ${hexName2} to determine whether current ${hex} removal is safe or not
   const [hexName1, hexName2] = oppositeHexNames;
 
-  if (breadthFirstSearch(hexName1, hexName2, queryMap, name)) {
-    updateAllHexesBordersAround(hex, name, false, queryMap, coordinatesMap);
-    return true;
+  if (await breadthFirstSearch(hexName1, hexName2, queryModel, name)) {
+    return await updateAllHexesBordersAround(hex, name, false, queryModel, coordinatesModel);
   }
-  return false;
+  return null;
 }
 
 function isAbleToDisconnectGrids(hexToRemove) {
@@ -152,7 +149,7 @@ function isAbleToDisconnectGrids(hexToRemove) {
   return null;
 }
 
-function breadthFirstSearch(hexName1, hexName2, queryMap, hexNameToRemove) {
+async function breadthFirstSearch(hexName1, hexName2, queryModel, hexNameToRemove) {
   const queue = new Queue();
   const seen = new Set();
 
@@ -165,15 +162,15 @@ function breadthFirstSearch(hexName1, hexName2, queryMap, hexNameToRemove) {
     if (!seen.has(currName)) {
       seen.add(currName);
     }
-    currHex = queryMap.get(currName);
+    currHex = await queryModel.findOne({ name: currName }).exec();
     // Loop through all 6 hexes around ${currHex}
     for (let border = 0; border < 6; ++border) {
       // ${currHex} has a neighbor at ${border}
-      if (currHex[border]) {
-        if (!seen.has(currHex[border])) { // And current neighbor hasn't been seen
-          queue.enqueue(currHex[border]); // Add current neighbor's name to queue
+      if (currHex._doc.props[border]) {
+        if (!seen.has(currHex._doc.props[border])) { // And current neighbor hasn't been seen
+          queue.enqueue(currHex._doc.props[border]); // Add current neighbor's name to queue
         }
-        if (currHex[border] === hexName2) { // Found destination
+        if (currHex._doc.props[border] === hexName2) { // Found destination
           return true;
         }
       }
@@ -182,33 +179,43 @@ function breadthFirstSearch(hexName1, hexName2, queryMap, hexNameToRemove) {
   return false;
 }
 
-function updateAllHexesBordersAround(hex, name, isAdding, queryMap, coordinatesMap) {
+async function updateAllHexesBordersAround(hex, name, isAdding, queryModel, coordinatesModel) {
   const [q, r] = hex.coordinates.split(',').map(c => Number(c));
   // Get all 6 hexes around current hex, and update their borders
-  let existHexName, existQ, existR, updatedExistHex;
+  let existHex, existQ, existR, updatedExistHex;
   for (let border = 0; border < 6; ++border) {
     [existQ, existR] = getNewCoordinatesFrom(q, r, border);
-    existHexName = coordinatesMap.get(`${existQ},${existR}`);
-    if (existHexName) {
+    existHex = await coordinatesModel.findOne({ coordinates: `${existQ},${existR}` }).exec();
+    if (existHex) {
       // Update the existing hex
-      updatedExistHex = queryMap.get(existHexName);
+      updatedExistHex = await queryModel.findOne({ name: existHex._doc.name }).exec();
       if (isAdding) {
         // Update existing hex connected to the new hex at opposite border to new hex's one
-        updatedExistHex[getNewHexBorderConnectedAt(border)] = name;
+        updatedExistHex._doc.props[getNewHexBorderConnectedAt(border)] = name;
         // Update new hex connected to the existing hex above at current ${border}
-        hex[border] = existHexName;
+        hex[border] = existHex._doc.name;
       } else {
         // Remove connections to the hex to be removed
-        delete updatedExistHex[getNewHexBorderConnectedAt(border)];
+        delete updatedExistHex._doc.props[getNewHexBorderConnectedAt(border)];
       }
+      await queryModel.updateOne({ name: updatedExistHex._doc.name }, { props: updatedExistHex._doc.props }).exec();
     }
   }
+  let hexResult;
   if (isAdding) {
-    queryMap.set(name, hex);
-    coordinatesMap.set(`${q},${r}`, name);
+    await new queryModel({ name, props: { ...hex } }).save();
+    hexResult = await new coordinatesModel({ coordinates: hex.coordinates, name }).save();
+    // queryModel.set(name, hex);
+    // coordinatesModel.set(`${q},${r}`, name);
   } else {
-    queryMap.delete(name);
-    coordinatesMap.delete(`${q},${r}`);
+    await queryModel.deleteOne({ name }).exec();
+    hexResult = await coordinatesModel.deleteOne({ coordinates: hex.coordinates }).exec();
+    // queryModel.delete(name);
+    // coordinatesModel.delete(`${q},${r}`);
+  }
+  return {
+    coordinates: hexResult._doc ? hexResult._doc.coordinates : hex.coordinates,
+    name: hexResult._doc ? hexResult._doc.name : name,
   }
 }
 
