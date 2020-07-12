@@ -46,10 +46,10 @@ function getNewCoordinatesFrom(q, r, borderNo) {
 }
 
 async function searchHex(name, queryModel) {
-  const { _doc: hexFound } = await queryModel.findOne({ name }).exec();
+  const hexFound = await queryModel.findOne({ name }).exec();
   return hexFound ? {
-    name: hexFound.name,
-    props: hexFound.props,
+    name: hexFound._doc.name,
+    props: hexFound._doc.props,
   } : null;
 }
 
