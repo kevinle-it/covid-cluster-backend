@@ -9,7 +9,7 @@ const {
   addHex,
   searchHex,
   removeHex,
-} = require('./hexaUtils');
+} = require('./hexaUtils.mongoDbVersion');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());

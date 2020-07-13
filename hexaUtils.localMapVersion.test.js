@@ -9,7 +9,7 @@ const {
   breadthFirstSearch,
   updateAllHexesBordersAround,
   Queue,
-} = require('./hexaUtils');
+} = require('./hexaUtils.mongoDbVersion');
 
 describe('Test hex util function: getNewHexBorderConnectedAt()', () => {
   test('Get border of hex2 that connects to hex1\'s border', () => {
@@ -130,19 +130,19 @@ describe('Test hex util function: getNewCoordinatesFrom()', () => {
 describe('Test hex util function: isAbleToDisconnectGrids()', () => {
   test('Remove hex = { 0: A, 2: B, 3: C } may disconnect the grids', () => {
     /*
-             0 A
-            ___
-         5 /   \ 1
-         4 \___/ 2 B
-             3
-             C
-       hexToRemove = {
-         0: 'A', // connect to hex A
-         2: 'B', // connect to hex B
-         3: 'C', // connect to hex C
-       }
-       => A is opposite to B & C and A is separated from B & C by nonconsecutive empty borders connections (1 and 4,5)
-       => Removing this hex may disconnect the grids
+              0 A
+             ___
+          5 /   \ 1
+          4 \___/ 2 B
+              3
+              C
+      hexToRemove = {
+      0: 'A', // connect to hex A
+      2: 'B', // connect to hex B
+      3: 'C', // connect to hex C
+      }
+      => A is opposite to B & C and A is separated from B & C by nonconsecutive empty borders connections (1 and 4,5)
+      => Removing this hex may disconnect the grids
      */
     const hexToRemove = { 0: 'A', 2: 'B', 3: 'C' };
     const oppositeHexNames = isAbleToDisconnectGrids(hexToRemove);
@@ -264,13 +264,13 @@ const setUpForRemoving = (hexFPosition = 1) => {
   const { queryMap, coordinatesMap } = setUpForAdding();
   /*
     Add hex F at position 1 or 2 to test removing F at either position
-                               ___
-                          ___ /f1 \ ___
-                         / a \\___// e \
-                         \___//f2 \\___/
-                         / b \\___// d \
-                         \___// c \\___/
-                              \___/
+                              ___
+                         ___ /f1 \ ___
+                        / a \\___// e \
+                        \___//f2 \\___/
+                        / b \\___// d \
+                        \___// c \\___/
+                             \___/
     a (0,0); b(0,1); c(1,1); d(2,0); e(2,-1); f1(1,-1); f2(1,0)
    */
   const hexA = {
@@ -484,12 +484,12 @@ describe('Test hex util function: breadthFirstSearch()', () => {
   test(`NOT found any path from hex a to e (added f connected to b at border 5 of b) without touching hex b`, () => {
     const { queryMap } = setUpForAdding();  // Look at setup function for grid illustration
     /*
-                   ___       ___
-              ___ / a \     / e \
-             / f \\___/     \___/
-             \___// b \ ___ / d \
-                  \___// c \\___/
-                       \___/
+                        ___       ___
+                   ___ / a \     / e \
+                  / f \\___/     \___/
+                  \___// b \ ___ / d \
+                       \___// c \\___/
+                            \___/
       a (0,0); b(0,1); c(1,1); d(2,0); e(2,-1); f(-1,1)
      */
     const hexF = {
@@ -507,13 +507,13 @@ describe('Test hex util function: breadthFirstSearch()', () => {
         (connected to a at border 3 of a)`, () => {
     const { queryMap } = setUpForAdding();  // Look at setup function for grid illustration
     /*
-                   ___       ___
-                  / a \     / e \
-                  \___/     \___/
-                  / b \ ___ / d \
-                  \___// c \\___/
-                  / f \\___/
-                  \___/
+                       ___       ___
+                      / a \     / e \
+                      \___/     \___/
+                      / b \ ___ / d \
+                      \___// c \\___/
+                      / f \\___/
+                      \___/
       a (0,0); b(0,1); c(1,1); d(2,0); e(2,-1); f(0,2)
      */
     const hexF = {
@@ -553,14 +553,14 @@ describe('Test hex util function: removeHex()', () => {
   test(`remove hex e (with new hex g and h connected to border 0 and 1 of e respectively) => update hex f, g, h and d`, () => {
     const { queryMap, coordinatesMap } = setUpForRemoving(1);  // Look at setup function for grid illustration
     /*
-                                     ___
-                                ___ / g \ ___
-                           ___ / f \\___// h \
-                          / a \\___// e \\___/
-                          \___/     \___/
-                          / b \ ___ / d \
-                          \___// c \\___/
-                               \___/
+                                         ___
+                                    ___ / g \ ___
+                               ___ / f \\___// h \
+                              / a \\___// e \\___/
+                              \___/     \___/
+                              / b \ ___ / d \
+                              \___// c \\___/
+                                   \___/
       a (0,0); b(0,1); c(1,1); d(2,0); e(2,-1); f(1,-1); g(2,-2); h(3,-2)
      */
     const hexToRemove = {
