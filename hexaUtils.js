@@ -14,7 +14,7 @@ async function addHex({ name, toHexName, atBorderNo, queryModel, coordinatesMode
     return null;
   }
   const oldHex = await queryModel.findOne({ name: toHexName }).exec();
-  if (oldHex) {
+  if (oldHex && !oldHex._doc.props[atBorderNo]) { // No hex connected at this oldHex border
     const [q, r] = oldHex._doc.props.coordinates.split(',').map(c => Number(c)); // Get old hex coordinates
 
     const newCoordinates = getNewCoordinatesFrom(q, r, atBorderNo);
